@@ -203,7 +203,9 @@ def check_system_requirements(
             )
             ime_list = result.stdout.strip()
 
-            if "com.android.adbkeyboard/.AdbIME" in ime_list:
+            from phone_agent.adb.input import ADB_IME_CANDIDATES
+
+            if any(ime in ime_list for ime in ADB_IME_CANDIDATES):
                 print("✅ OK")
             else:
                 print("❌ FAILED")

@@ -4,6 +4,13 @@ import base64
 import subprocess
 from typing import Optional
 
+# IMEs compatible with the ADB Keyboard broadcast protocol (ADB_INPUT_B64 etc.),
+# in preference order.
+ADB_IME_CANDIDATES = [
+    "com.android.adbkeyboard/.AdbIME",
+    "com.github.uiautomator/.AdbKeyboard",
+]
+
 
 def type_text(text: str, device_id: str | None = None) -> None:
     """
@@ -73,10 +80,22 @@ def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
     )
     current_ime = (result.stdout + result.stderr).strip()
 
+    # Pick the first compatible ADB keyboard available on the device
+    result = subprocess.run(
+        adb_prefix + ["shell", "ime", "list", "-s"],
+        capture_output=True,
+        text=True,
+    )
+    available_imes = result.stdout
+    target_ime = next(
+        (ime for ime in ADB_IME_CANDIDATES if ime in available_imes),
+        ADB_IME_CANDIDATES[0],
+    )
+
     # Switch to ADB Keyboard if not already set
-    if "com.android.adbkeyboard/.AdbIME" not in current_ime:
+    if target_ime not in current_ime:
         subprocess.run(
-            adb_prefix + ["shell", "ime", "set", "com.android.adbkeyboard/.AdbIME"],
+            adb_prefix + ["shell", "ime", "set", target_ime],
             capture_output=True,
             text=True,
         )
